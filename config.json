@@ -1,0 +1,8 @@
+{
+    "mode": "cmd",
+    "api": {
+        "name": "test",
+        "key": ""
+    },
+    "cmdInputFileType": "excel"
+}

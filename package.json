@@ -1,0 +1,30 @@
+{
+  "name": "real-distance-calculator",
+  "version": "1.0.0",
+  "description": "Calculates distances between given origin and destination points using real distance APIs (Google Distance API)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alccetinkaya/real-distance-calculator.git"
+  },
+  "keywords": [
+    "distance",
+    "Google",
+    "Distance",
+    "API"
+  ],
+  "author": "Ali Cuneyt Cetinkaya",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alccetinkaya/real-distance-calculator/issues"
+  },
+  "homepage": "https://github.com/alccetinkaya/real-distance-calculator#readme",
+  "dependencies": {
+    "@types/node": "^16.11.11",
+    "prompts": "^2.4.2",
+    "read-excel-file": "^5.2.25"
+  }
+}
