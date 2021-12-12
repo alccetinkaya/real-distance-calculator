@@ -14,3 +14,11 @@ export async function getPromptResult<T>({ type = null, name = "default", messag
     });
     return response[name];
 }
+
+export function getDate_YYYYMMDD(timestamp: number): string {
+    return new Date(timestamp).toJSON().slice(0, 10);
+}
+
+export function getDate_YYYYMMDD_HHMMSS(timestamp: number): string {
+    return new Date(timestamp).toISOString().replace('T', ' ').substring(0, 19);
+}
