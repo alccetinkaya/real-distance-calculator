@@ -1,12 +1,5 @@
 const readExcelFile = require('read-excel-file/node');
 
-export enum ExcelFileColumn {
-    CODE = 0,
-    NAME = 1,
-    LATITUDE = 2,
-    LONGITUDE = 3
-}
-
 export class ExcelService {
     readExcelFile(filePath: string) {
         readExcelFile(filePath).then((rows: any) => {
