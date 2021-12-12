@@ -1,34 +1,45 @@
 import { ConfigModes, ConfigService } from "./src/services/config.service";
 import configFile from "./config.json"
 import { CmdHandler } from "./src/handler/cmd.handler";
-import { ConsoleLogService } from "./src/services/log.service";
+import { ConsoleLogService, FileLogService, LogServiceInterface } from "./src/services/log.service";
 import { exit } from "./src/utilities";
+import { ConsolePrintService, ExcelPrintService } from "./src/services/print.service";
 
-async function start() {
-    let configService: ConfigService = ConfigService.Instance;
+class DistanceCalculator {
+    _logServices: LogServiceInterface[];
 
-    try {
-        configService.readConfigFile(configFile);
+    constructor(logServices: LogServiceInterface[]) {
+        this._logServices = logServices;
+    }
 
-        let configMode: string = configService.getConfigMode();
-        switch (configMode) {
-            case ConfigModes.CMD:
-                await new CmdHandler(configService.getCmdInputFileType(), [new ConsoleLogService()]).start();
-                break;
-            case ConfigModes.REST:
-                break;
-            default:
-                break;
+    errorLog(error: string) {
+        for (const logService of this._logServices) {
+            logService.errorLog(error);
         }
+    }
 
-        exit();
-    } catch (error) {
-        console.log(error);
-        if (configService.getConfigMode() == ConfigModes.CMD) {
-            exit();
+    async start() {
+        let configService: ConfigService = ConfigService.Instance;
+        try {
+            configService.readConfigFile(configFile);
+
+            switch (configService.getConfigMode()) {
+                case ConfigModes.CMD:
+                    await new CmdHandler(configService.getCmdInputFileType(), [new ConsoleLogService(), FileLogService.Instance]).start();
+                    break;
+                case ConfigModes.REST:
+                    break;
+                default:
+                    break;
+            }
+        } catch (error) {
+            this.errorLog(error);
+            if (configService.getConfigMode() == ConfigModes.CMD) {
+                exit();
+            }
+            return;
         }
-        return;
     }
 }
 
-start();
+new DistanceCalculator([new ConsoleLogService(), FileLogService.Instance]).start()

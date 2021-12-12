@@ -7,18 +7,20 @@ export interface ConfigData {
     cmdInputFileType: string
 }
 
-export interface PrintData {
-    originCode: number;
-    originName: string;
-    destCode: number;
-    destName: string;
-    distance: string;
-    duration: string;
+export interface DistanceData {
+    value: string;
+    measure: string;
 }
 
-export interface DistanceData {
+export interface DurationData {
+    value: string;
+    measure: string;
+}
+
+export interface PrintData {
     originPoint: Point;
     destinationPoint: Point;
-    distance: string;
-    duration: string;
+    distance: DistanceData;
+    duration: DurationData;
 }
+

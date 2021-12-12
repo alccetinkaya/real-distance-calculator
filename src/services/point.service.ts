@@ -1,19 +1,31 @@
 import { Point } from "../models/point.model";
-import { ExcelFileColumn } from "./excel.service";
 import { LogServiceInterface } from "./log.service";
 
+export enum PointParams {
+    CODE = 0,
+    NAME = 1,
+    LATITUDE = 2,
+    LONGITUDE = 3
+}
+
 export class PointService {
-    _pointList: Point[]
-    _logServices: LogServiceInterface[]
+    _pointList: Point[];
+    _logServices: LogServiceInterface[];
 
     constructor(logServices: LogServiceInterface[]) {
-        this._pointList = []
-        this._logServices = logServices
+        this._pointList = [];
+        this._logServices = logServices;
     }
 
     errorLog(error: string): void {
         for (const logService of this._logServices) {
             logService.errorLog(error)
+        }
+    }
+
+    infoLog(info: string): void {
+        for (const logService of this._logServices) {
+            logService.infoLog(info)
         }
     }
 
@@ -28,23 +40,23 @@ export class PointService {
         });
         if (valueErr) return false;
 
-        if (Number.isNaN(point[ExcelFileColumn.CODE])) {
-            this.errorLog("Point code is not a number");
+        if (typeof point[PointParams.CODE] !== 'number') {
+            this.errorLog(point[PointParams.NAME] + " point code is not a number");
             return false;
         }
 
-        if (Object.prototype.toString.call(point[ExcelFileColumn.NAME]) !== '[object String]') {
-            this.errorLog("Point name is not a string");
+        if (typeof point[PointParams.NAME] !== 'string') {
+            this.errorLog(point[PointParams.NAME] + " point name is not a string");
             return false;
         }
 
-        if (Number.isNaN(ExcelFileColumn.LATITUDE)) {
-            this.errorLog("Point latitude is not a number");
+        if (typeof point[PointParams.LATITUDE] !== 'number') {
+            this.errorLog(point[PointParams.NAME] + " point latitude is not a number");
             return false;
         }
 
-        if (Number.isNaN(ExcelFileColumn.LONGITUDE)) {
-            this.errorLog("Point longitude is not a number");
+        if (typeof point[PointParams.LONGITUDE] !== 'number') {
+            this.errorLog(point[PointParams.NAME] + " point longitude is not a number");
             return false;
         }
 
@@ -56,13 +68,15 @@ export class PointService {
             // valide point object
             if (this.validatePoint(point)) {
                 // check if point is exist in list
-                if (!this._pointList.some(element => element.name === point[ExcelFileColumn.NAME])) {
+                if (!this._pointList.some(element => element.name === point[PointParams.NAME])) {
                     this._pointList.push({
-                        code: point[ExcelFileColumn.CODE],
-                        name: point[ExcelFileColumn.NAME],
-                        latitude: point[ExcelFileColumn.LATITUDE],
-                        longitude: point[ExcelFileColumn.LONGITUDE]
+                        code: point[PointParams.CODE],
+                        name: point[PointParams.NAME],
+                        latitude: point[PointParams.LATITUDE],
+                        longitude: point[PointParams.LONGITUDE]
                     });
+                } else {
+                    this.infoLog(`There are multiple identical point names for ${point[PointParams.NAME]}`);
                 }
             }
         }
@@ -85,8 +99,8 @@ export class PointService {
             this.errorLog("Point code couldn't find in point list")
             return null
         }
+        
         return this.getPointByIndex(index);
-
     }
 
 }

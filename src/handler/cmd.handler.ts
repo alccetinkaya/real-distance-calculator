@@ -5,6 +5,7 @@ import { DistanceService } from "../services/distance.service";
 import { ExcelService } from "../services/excel.service";
 import { LogServiceInterface } from "../services/log.service";
 import { PointService } from "../services/point.service";
+import { ConsolePrintService, ExcelPrintService, PrintServiceInterface } from "../services/print.service";
 import { exit, getPromptResult } from "../utilities";
 
 let promptResultStr: string;
@@ -13,6 +14,7 @@ let promptResultNum: number;
 export class CmdHandler {
     _inputFileType: string = null;
     _logServices: LogServiceInterface[] = [];
+    _printServices: PrintServiceInterface[] = []
 
     constructor(inputFileType: string, logServices: LogServiceInterface[]) {
         this._inputFileType = inputFileType;
@@ -25,9 +27,9 @@ export class CmdHandler {
         }
     }
 
-    printDistanceData(data: DistanceData[]) {
+    infoLog(info: string) {
         for (const logService of this._logServices) {
-            logService.printDistanceData(data);
+            logService.infoLog(info);
         }
     }
 
@@ -89,13 +91,13 @@ export class CmdHandler {
             }
 
             let originPoint: Point = points[promptResultNum - 1];
-            console.log(`${originPoint.name} was selected as origin point...`)
+            this.infoLog(`${originPoint.name} has selected as origin point...`);
             return [originPoint];
         }
 
         // handle all origin points
         if (promptResultStr === "all") {
-            console.log(`All points were selected as origin points...`)
+            this.infoLog(`All points were selected as origin points...`);
             return points;
         }
 
@@ -126,13 +128,13 @@ export class CmdHandler {
             }
 
             let destinationPoint: Point = points[promptResultNum - 1];
-            console.log(`${destinationPoint.name} was selected as destination point...`)
+            this.infoLog(`${destinationPoint.name} has selected as destination point...`);
             return [destinationPoint];
         }
 
         // handle all origin points
         if (promptResultStr === "all") {
-            console.log(`All points were selected as destination points...`)
+            this.infoLog(`All points were selected as destination points...`);
             return points;
         }
 
@@ -140,45 +142,72 @@ export class CmdHandler {
     }
 
     async start() {
-        // get input file from user
-        let inputFile: string = await getPromptResult<string>({
-            type: "text",
-            message: "Please enter input file name: "
-        });
+        let inputFile: string;
+        let outputFile: string;
 
-        // read input file
+        // get output file name from user
+        outputFile = ''
+        while (outputFile === '') {
+            outputFile = await getPromptResult<string>({
+                type: "text",
+                message: "Please enter output file name: "
+            });
+        }
+
+        // get input file from user
+        inputFile = await getPromptResult<string>({
+            type: "text",
+            message: "Please enter input file name for origins: "
+        });
+        // read origin input file
         let points: Point[] = [];
         points = await this.inputFileHandler(inputFile);
         if (points === null) {
             exit();
             return;
         }
-
         // get origin points
         let originPoints = await this.originPointHandler(points);
         if (originPoints === null) {
-            this.errorLog("Origin point/points couldn't get successfully!");
+            this.errorLog("Origin point/points couldn't be imported successfully!");
             exit();
             return;
         }
+        if (originPoints.length === 0) {
+            this.errorLog("At least one origin point couldn't be imported");
+            exit();
+            return;
+        }
+        this.infoLog(originPoints.length + " origin point/points have imported")
 
+        // get input file from user
+        promptResultStr = await getPromptResult<string>({
+            type: "text",
+            message: "Do you want to use same origin file for destinations? (Y/n): "
+        });
+        if (promptResultStr !== "Y") {
+            inputFile = await getPromptResult<string>({
+                type: "text",
+                message: "Please enter input file name for destinations: "
+            });
+        } else {
+            this.infoLog("The origin file will be used as destination file");
+        }
         // get destination points
         let destionationPoints = await this.destinationPointHandler(points);
         if (destionationPoints === null) {
-            this.errorLog("Destination point/points couldn't get successfully!");
+            this.errorLog("Destination point/points couldn't be imported successfully!");
             exit();
             return;
         }
+        if (destionationPoints.length === 0) {
+            this.errorLog("At least one destination point couldn't be imported");
+            exit();
+            return;
+        }
+        this.infoLog(destionationPoints.length + " destination point/points have imported")
 
         // calculate distance
-        let distanceService: DistanceService = new DistanceService();
-        try {
-            let distanceList: DistanceData[] = await distanceService.calculate(originPoints, destionationPoints);
-            this.printDistanceData(distanceList);
-        } catch (error) {
-            this.errorLog("Calculate distance error => " + error);
-            exit();
-            return;
-        }
+        await new DistanceService([new ConsolePrintService(), new ExcelPrintService(outputFile)]).calculate(originPoints, destionationPoints);
     }
 }
