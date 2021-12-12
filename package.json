@@ -24,6 +24,7 @@
   "homepage": "https://github.com/alccetinkaya/real-distance-calculator#readme",
   "dependencies": {
     "@types/node": "^16.11.11",
+    "exceljs": "^4.3.0",
     "prompts": "^2.4.2",
     "read-excel-file": "^5.2.25"
   }
