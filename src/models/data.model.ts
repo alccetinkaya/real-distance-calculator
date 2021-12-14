@@ -4,6 +4,7 @@ export interface ConfigData {
     mode: string
     apiName: string
     apiKey: string
+    direction: string;
     cmdInputFileType: string
 }
 

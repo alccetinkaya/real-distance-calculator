@@ -18,10 +18,17 @@ class DistanceCalculator {
         }
     }
 
+    infoLog(info: string) {
+        for (const logService of this._logServices) {
+            logService.infoLog(info);
+        }
+    }
+
     async start() {
         let configService: ConfigService = ConfigService.Instance;
         try {
             configService.readConfigFile(configFile);
+            this.infoLog("Config parameters: " + JSON.stringify(configFile));
 
             switch (configService.getConfigMode()) {
                 case ConfigModes.CMD:

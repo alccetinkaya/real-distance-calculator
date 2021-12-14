@@ -11,9 +11,8 @@
     "url": "git+https://github.com/alccetinkaya/real-distance-calculator.git"
   },
   "keywords": [
-    "distance",
-    "Google",
     "Distance",
+    "Google",
     "API"
   ],
   "author": "Ali Cuneyt Cetinkaya",
@@ -25,6 +24,7 @@
   "dependencies": {
     "@types/node": "^16.11.11",
     "exceljs": "^4.3.0",
+    "google-distance-matrix": "^1.1.1",
     "prompts": "^2.4.2",
     "read-excel-file": "^5.2.25"
   }

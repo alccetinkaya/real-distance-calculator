@@ -1,4 +1,5 @@
-import { DistanceData, PrintData } from "../models/data.model";
+import fs from 'fs';
+import { PrintData } from "../models/data.model";
 const Excel = require('exceljs')
 
 export interface PrintServiceInterface {
@@ -7,19 +8,21 @@ export interface PrintServiceInterface {
 
 export class ConsolePrintService implements PrintServiceInterface {
     printDistanceData(data: PrintData): void {
-        console.log(`${data.originPoint.name.padEnd(25)} -> ${data.destinationPoint.name.padEnd(25)} || Distance: ${data.distance.value.padEnd(15)} Duration: ${data.duration.value}`);
+        console.log(`${data.originPoint.name.padEnd(25)} -> ${data.destinationPoint.name.padEnd(25)} || Distance: ${data.distance.value.padEnd(10)} ${data.distance.measure} Duration: ${data.duration.value.padEnd(10)} ${data.duration.measure}`);
     }
 }
 
 export class ExcelPrintService implements PrintServiceInterface {
+    _dir: string;
     _name: string;
     _workbook: any;
     _worksheet: any
 
     constructor(name: string) {
+        this._dir = "output/"
         this._name = name + ".xlsx";
         this._workbook = new Excel.Workbook();
-        this._worksheet = this._workbook.addWorksheet('Sheet 1');
+        this._worksheet = this._workbook.addWorksheet('Sheet1');
 
         this._worksheet.columns = [
             { header: 'Origin Code', key: 'originCode' },
@@ -35,6 +38,9 @@ export class ExcelPrintService implements PrintServiceInterface {
             column.width = column.header.length < 12 ? 12 : column.header.length
         })
         this._worksheet.getRow(1).font = { bold: true }
+
+        fs.mkdirSync(this._dir, { recursive: true });
+        this._workbook.xlsx.writeFile(this._dir + this._name);
     }
 
     printDistanceData(data: PrintData): void {
@@ -43,11 +49,11 @@ export class ExcelPrintService implements PrintServiceInterface {
             originName: data.originPoint.name,
             destinationCode: data.destinationPoint.code,
             destinationName: data.destinationPoint.name,
-            distance: data.distance.value,
+            distance: Number(data.distance.value),
             distanceMeasure: data.distance.measure,
-            duration: data.duration.value,
+            duration: Number(data.duration.value),
             durationMeasure: data.duration.measure
         });
-        this._workbook.xlsx.writeFile(this._name);
+        this._workbook.xlsx.writeFile(this._dir + this._name);
     }
 }

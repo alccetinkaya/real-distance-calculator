@@ -23,6 +23,12 @@ export class PointService {
         }
     }
 
+    warnLog(warning: string): void {
+        for (const logService of this._logServices) {
+            logService.warnLog(warning)
+        }       
+    }
+
     infoLog(info: string): void {
         for (const logService of this._logServices) {
             logService.infoLog(info)
@@ -76,7 +82,7 @@ export class PointService {
                         longitude: point[PointParams.LONGITUDE]
                     });
                 } else {
-                    this.infoLog(`There are multiple identical point names for ${point[PointParams.NAME]}`);
+                    this.warnLog(`There are multiple identical point names for ${point[PointParams.NAME]}`);
                 }
             }
         }

@@ -3,17 +3,22 @@ import { getDate_YYYYMMDD, getDate_YYYYMMDD_HHMMSS } from "../utilities";
 import fs from 'fs';
 
 export interface LogServiceInterface {
-    errorLog(error: string): void
-    infoLog(info: string): void
+    errorLog(error: string): void;
+    warnLog(warning: string):void;
+    infoLog(info: string): void;
 }
 
 export class ConsoleLogService implements LogServiceInterface {
     errorLog(error: string): void {
-        console.log("\x1b[31mERROR: \x1b[0m", error);
+        console.log("\x1b[31mERROR: " + error + "\x1b[0m");
+    }
+
+    warnLog(warning: string):void  {
+        console.log("\x1b[35mWARN: " + warning + "\x1b[0m");
     }
 
     infoLog(info: string): void {
-        console.log("\x1b[33mINFO: \x1b[0m", info);
+        console.log("\x1b[33mINFO: " + info + "\x1b[0m");
     }
 }
 
@@ -24,7 +29,7 @@ export class FileLogService implements LogServiceInterface {
     _file: any;
 
     private constructor() {
-        this._dir = "./";
+        this._dir = "log/";
         this._name = getDate_YYYYMMDD(Date.now()) + ".log";
         this.createFileSync();
     }
@@ -34,11 +39,15 @@ export class FileLogService implements LogServiceInterface {
     }
 
     errorLog(error: string): void {
-        this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][ERROR] ${error}`);
+        this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][ERR] ${error}`);
+    }
+
+    warnLog(warning: string): void {
+        this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][WRN] ${warning}`);
     }
 
     infoLog(info: string): void {
-        this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][INFO] ${info}`);
+        this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][INF] ${info}`);
     }
 
     async createFileSync() {

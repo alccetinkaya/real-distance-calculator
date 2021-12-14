@@ -4,5 +4,6 @@
         "name": "test",
         "key": ""
     },
+    "direction": "two-way",
     "cmdInputFileType": "excel"
 }

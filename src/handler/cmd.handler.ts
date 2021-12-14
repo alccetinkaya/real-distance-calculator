@@ -3,7 +3,7 @@ import { Point } from "../models/point.model";
 import { CmdInputFileTypes } from "../services/config.service";
 import { DistanceService } from "../services/distance.service";
 import { ExcelService } from "../services/excel.service";
-import { LogServiceInterface } from "../services/log.service";
+import { ConsoleLogService, FileLogService, LogServiceInterface } from "../services/log.service";
 import { PointService } from "../services/point.service";
 import { ConsolePrintService, ExcelPrintService, PrintServiceInterface } from "../services/print.service";
 import { exit, getPromptResult } from "../utilities";
@@ -43,8 +43,8 @@ export class CmdHandler {
         }
 
         // check points length
-        if (points.length < 2) {
-            this.errorLog(`${excelFile} file doesn't have at least 2 rows`);
+        if (points.length < 1) {
+            this.errorLog(`${excelFile} file doesn't have at least 1 row`);
             return null;
         }
 
@@ -144,15 +144,7 @@ export class CmdHandler {
     async start() {
         let inputFile: string;
         let outputFile: string;
-
-        // get output file name from user
-        outputFile = ''
-        while (outputFile === '') {
-            outputFile = await getPromptResult<string>({
-                type: "text",
-                message: "Please enter output file name: "
-            });
-        }
+        let points: Point[] = [];
 
         // get input file from user
         inputFile = await getPromptResult<string>({
@@ -160,7 +152,6 @@ export class CmdHandler {
             message: "Please enter input file name for origins: "
         });
         // read origin input file
-        let points: Point[] = [];
         points = await this.inputFileHandler(inputFile);
         if (points === null) {
             exit();
@@ -190,6 +181,12 @@ export class CmdHandler {
                 type: "text",
                 message: "Please enter input file name for destinations: "
             });
+            // read destination input file
+            points = await this.inputFileHandler(inputFile);
+            if (points === null) {
+                exit();
+                return;
+            }
         } else {
             this.infoLog("The origin file will be used as destination file");
         }
@@ -205,9 +202,20 @@ export class CmdHandler {
             exit();
             return;
         }
-        this.infoLog(destionationPoints.length + " destination point/points have imported")
+        this.infoLog(destionationPoints.length + " destination point/points have imported");
+
+        // get output file name from user
+        outputFile = ''
+        while (outputFile === '') {
+            outputFile = await getPromptResult<string>({
+                type: "text",
+                message: "Please enter output file name: "
+            });
+        }
 
         // calculate distance
-        await new DistanceService([new ConsolePrintService(), new ExcelPrintService(outputFile)]).calculate(originPoints, destionationPoints);
+        await new DistanceService([new ConsoleLogService(), FileLogService.Instance],
+            [new ConsolePrintService(), new ExcelPrintService(outputFile)])
+            .calculate(originPoints, destionationPoints);
     }
 }

@@ -1,15 +1,16 @@
-const readExcelFile = require('read-excel-file/node');
+const Excel = require('read-excel-file/node');
+//const Excel = require('exceljs')
 
 export class ExcelService {
     readExcelFile(filePath: string) {
-        readExcelFile(filePath).then((rows: any) => {
+        Excel(filePath).then((rows: any) => {
             return rows;
         });
     }
 
     readExcelFileSync(filePath: string): Promise<any[]> {
         return new Promise((resolve, _reject) => {
-            readExcelFile(filePath).then((rows: any[]) => {
+            Excel(filePath).then((rows: any[]) => {
                 resolve(rows);
             });
         });
@@ -17,7 +18,7 @@ export class ExcelService {
 
     async readPointsFromExcelFileSync(filePath: string): Promise<any[]> {
         return new Promise((resolve, reject) => {
-            readExcelFile(filePath)
+            Excel(filePath)
                 .then((rows: any[]) => {
                     rows.shift(); // discard the first line
                     resolve(rows);
