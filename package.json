@@ -23,6 +23,7 @@
   "homepage": "https://github.com/alccetinkaya/real-distance-calculator#readme",
   "dependencies": {
     "@types/node": "^16.11.11",
+    "colors": "^1.4.0",
     "exceljs": "^4.3.0",
     "google-distance-matrix": "^1.1.1",
     "prompts": "^2.4.2",
