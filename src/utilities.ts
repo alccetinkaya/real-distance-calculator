@@ -22,3 +22,17 @@ export function getDate_YYYYMMDD(timestamp: number): string {
 export function getDate_YYYYMMDD_HHMMSS(timestamp: number): string {
     return new Date(timestamp).toISOString().replace('T', ' ').substring(0, 19);
 }
+
+export function getMaxLenOfListElement(list: any[]) {
+    let size: number = 0;
+    list.forEach(element => {
+        let str: string;
+        if (typeof element === 'object') {
+            str = JSON.stringify(element);
+        } else {
+            str = element.toString();
+        }
+        size = size < str.length ? str.length : size;
+    });
+    return size;
+}
