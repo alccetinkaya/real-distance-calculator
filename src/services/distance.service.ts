@@ -1,5 +1,6 @@
 import { PrintData } from "../models/data.model";
 import { Point } from "../models/point.model";
+import { UserInputData, UserInputNames } from "../models/user-input.model";
 import { ConfigApiNames, ConfigDirectionNames, ConfigService } from "./config.service";
 import { LogServiceInterface } from "./log.service";
 import { PrintServiceInterface } from "./print.service";
@@ -33,6 +34,8 @@ export class DistanceService {
             let x1: number = Number(origin.latitude);
             let y1: number = Number(origin.longitude);
             for (const destination of destinations) {
+                if (origin.name === destination.name) continue;
+
                 let x2: number = Number(destination.latitude);
                 let y2: number = Number(destination.longitude);
 
@@ -96,6 +99,13 @@ export class DistanceService {
 
                 let element = result.rows[i].elements[j];
                 if (element.status === 'OK') {
+                    if (origin.name === destination.name) continue;
+
+                    if (element.distance.value == 0 || element.duration.value == 0) {
+                        this.errorLog(`There is no distance or duration value between ${origin.name} and ${destination.name}`);
+                        continue;
+                    }
+
                     let [distance, distanceMeasure]: string = element.distance.text.split(" ");
                     let [duration, durationMeasure]: string = element.duration.text.split(" ");
                     this.printDistanceData({
@@ -105,27 +115,28 @@ export class DistanceService {
                         duration: { value: duration, measure: durationMeasure }
                     });
                 } else {
-                    this.errorLog(`${destination.name} is not reachable by lan from ${origin.name}`);
+                    this.errorLog(`${destination.name} is not reachable by land from ${origin.name}`);
                 }
             }
         }
     }
 
-    async googleDistanceAPI(origins: Point[], destinations: Point[]) {
+    async googleDistanceAPI(userInput: UserInputData, origins: Point[], destinations: Point[]) {
         await this.calculateDistanceGoogle(origins, destinations);
-        if (configService.getConfigDirection() == ConfigDirectionNames.TWO_WAY) {
-            this.calculateDistanceGoogle(destinations, origins);
+        if (configService.getConfigDirection() == ConfigDirectionNames.TWO_WAY &&
+            userInput.originPointSelect === UserInputNames.ALL && userInput.destinationPointSelect === UserInputNames.ALL) {
+            await this.calculateDistanceGoogle(destinations, origins);
         }
     }
 
-    async calculate(origins: Point[], destinations: Point[]) {
+    async calculate(userInput: UserInputData, origins: Point[], destinations: Point[]) {
         switch (configService.getConfigApiName()) {
             case ConfigApiNames.TEST:
                 this.testDistanceAPI(origins, destinations);
                 break;
             case ConfigApiNames.GOOGLE:
                 googleDistance.key(configService.getConfigApiKey());
-                await this.googleDistanceAPI(origins, destinations);
+                await this.googleDistanceAPI(userInput, origins, destinations);
                 break;
             default:
                 break;
