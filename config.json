@@ -5,5 +5,5 @@
         "key": ""
     },
     "direction": "two-way",
-    "cmdInputFileType": "excel"
+    "cmdInputFileType": "xlsx"
 }
