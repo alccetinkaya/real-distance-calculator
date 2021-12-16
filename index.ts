@@ -3,7 +3,6 @@ import configFile from "./config.json"
 import { CmdHandler } from "./src/handler/cmd.handler";
 import { ConsoleLogService, FileLogService, LogServiceInterface } from "./src/services/log.service";
 import { exit } from "./src/utilities";
-import { ConsolePrintService, ExcelPrintService } from "./src/services/print.service";
 
 class DistanceCalculator {
     _logServices: LogServiceInterface[];
@@ -28,11 +27,10 @@ class DistanceCalculator {
         let configService: ConfigService = ConfigService.Instance;
         try {
             configService.readConfigFile(configFile);
-            this.infoLog("Config parameters: " + JSON.stringify(configFile));
 
             switch (configService.getConfigMode()) {
                 case ConfigModes.CMD:
-                    await new CmdHandler(configService.getCmdInputFileType(), [new ConsoleLogService(), FileLogService.Instance]).start();
+                    await new CmdHandler([new ConsoleLogService(), FileLogService.Instance]).start();
                     break;
                 case ConfigModes.REST:
                     break;
