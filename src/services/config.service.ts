@@ -17,7 +17,7 @@ export enum ConfigDirectionNames {
 }
 
 export enum CmdInputFileTypes {
-    EXCEL = "excel",
+    XLSX = "xlsx",
     JSON = "json"
 }
 
@@ -86,7 +86,7 @@ export class ConfigService {
 
             // check config file CMD input type's value
             let configFileCmdInputFileType = configFile.cmdInputFileType;
-            let cmdInputFileTypeValueList: string[] = [CmdInputFileTypes.EXCEL, CmdInputFileTypes.JSON];
+            let cmdInputFileTypeValueList: string[] = [CmdInputFileTypes.XLSX, CmdInputFileTypes.JSON];
             if (cmdInputFileTypeValueList.indexOf(configFileCmdInputFileType) === -1)
                 throw `Config file "CMD input type" parameter has wrong value! It can be ${[...cmdInputFileTypeValueList]}`;
         }
