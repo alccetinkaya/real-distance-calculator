@@ -1,23 +1,32 @@
-import { DistanceData } from "../models/data.model";
 import { Point } from "../models/point.model";
-import { CmdInputFileTypes } from "../services/config.service";
+import { UserInputData, UserInputNames } from "../models/user-input.model";
+import { CmdInputFileTypes, ConfigService } from "../services/config.service";
 import { DistanceService } from "../services/distance.service";
 import { ExcelService } from "../services/excel.service";
 import { ConsoleLogService, FileLogService, LogServiceInterface } from "../services/log.service";
 import { PointService } from "../services/point.service";
 import { ConsolePrintService, ExcelPrintService, PrintServiceInterface } from "../services/print.service";
-import { exit, getPromptResult } from "../utilities";
+import { exit, getMaxLenOfListElement, getPromptResult } from "../utilities";
+
+const configService = ConfigService.Instance;
 
 let promptResultStr: string;
 let promptResultNum: number;
+let userInput: UserInputData = {
+    originFileName: null,
+    originPointSelect: null,
+    originPointLen: 0,
+    destinationFileName: null,
+    destinationPointSelect: null,
+    destinationPointLen: 0,
+    outputFileName: null
+};
 
 export class CmdHandler {
-    _inputFileType: string = null;
     _logServices: LogServiceInterface[] = [];
     _printServices: PrintServiceInterface[] = []
 
-    constructor(inputFileType: string, logServices: LogServiceInterface[]) {
-        this._inputFileType = inputFileType;
+    constructor(logServices: LogServiceInterface[]) {
         this._logServices = logServices;
     }
 
@@ -31,6 +40,18 @@ export class CmdHandler {
         for (const logService of this._logServices) {
             logService.infoLog(info);
         }
+    }
+
+    tableLog(session: any) {
+        for (const logService of this._logServices) {
+            logService.tableLog(session);
+        }
+    }
+
+    printPointsToUser(points: Point[]) {
+        points.forEach((point, i) => {
+            console.log(`${(i + 1).toString().padEnd(3)} : ${point.name.toString().padEnd(getMaxLenOfListElement(points.map(obj => obj.name)))}`);
+        });
     }
 
     async inputExcelFileHandler(excelFile: any): Promise<Point[]> {
@@ -57,8 +78,8 @@ export class CmdHandler {
     }
 
     async inputFileHandler(inputFile: string): Promise<Point[]> {
-        switch (this._inputFileType) {
-            case CmdInputFileTypes.EXCEL:
+        switch (configService.getCmdInputFileType()) {
+            case CmdInputFileTypes.XLSX:
                 return await this.inputExcelFileHandler(inputFile);
             case CmdInputFileTypes.JSON:
                 return await this.inputJsonFileHandler(inputFile);
@@ -69,19 +90,17 @@ export class CmdHandler {
 
     async originPointHandler(points: Point[]): Promise<Point[]> {
         promptResultStr = '';
-        while (promptResultStr !== "one" && promptResultStr !== "all") {
+        while (promptResultStr !== UserInputNames.ONE && promptResultStr !== UserInputNames.ALL) {
             promptResultStr = await getPromptResult<string>({
                 type: "text",
-                message: "Do you want to calculate distance for all origin points or one specific origin point? (all/one): "
+                message: `Do you want to calculate distance for all origin points or one specific origin point? (${UserInputNames.ALL}/${UserInputNames.ONE}): `
             });
         }
 
         // handle one origin point
-        if (promptResultStr === "one") {
+        if (promptResultStr === UserInputNames.ONE) {
             // print point list to user
-            points.forEach((point, i) => {
-                console.log(`${(i + 1).toString().padEnd(3)} : ${point.code.toString().padEnd(6)} ${point.name.toString().padEnd(25)}`);
-            });
+            this.printPointsToUser(points);
             promptResultNum = null;
             while (promptResultNum < 1 || promptResultNum > points.length) {
                 promptResultNum = await getPromptResult<number>({
@@ -90,13 +109,15 @@ export class CmdHandler {
                 });
             }
 
+            userInput.originPointSelect = UserInputNames.ONE;
             let originPoint: Point = points[promptResultNum - 1];
             this.infoLog(`${originPoint.name} has selected as origin point...`);
             return [originPoint];
         }
 
         // handle all origin points
-        if (promptResultStr === "all") {
+        if (promptResultStr === UserInputNames.ALL) {
+            userInput.originPointSelect = UserInputNames.ALL;
             this.infoLog(`All points were selected as origin points...`);
             return points;
         }
@@ -106,19 +127,17 @@ export class CmdHandler {
 
     async destinationPointHandler(points: Point[]): Promise<Point[]> {
         promptResultStr = '';
-        while (promptResultStr !== "one" && promptResultStr !== "all") {
+        while (promptResultStr !== UserInputNames.ONE && promptResultStr !== UserInputNames.ALL) {
             promptResultStr = await getPromptResult<string>({
                 type: "text",
-                message: "Do you want to calculate distance for all destination points or one specific destination point? (all/one): "
+                message: `Do you want to calculate distance for all destination points or one specific destination point? (${UserInputNames.ALL}/${UserInputNames.ONE}): `
             });
         }
 
         // handle one destination point
-        if (promptResultStr === "one") {
+        if (promptResultStr === UserInputNames.ONE) {
             // print point list to user
-            points.forEach((point, i) => {
-                console.log(`${(i + 1).toString().padEnd(3)} : ${point.code.toString().padEnd(6)} ${point.name.toString().padEnd(25)}`);
-            });
+            this.printPointsToUser(points);
             promptResultNum = null;
             while (promptResultNum < 1 || promptResultNum > points.length) {
                 promptResultNum = await getPromptResult<number>({
@@ -127,13 +146,15 @@ export class CmdHandler {
                 });
             }
 
+            userInput.destinationPointSelect = UserInputNames.ONE;
             let destinationPoint: Point = points[promptResultNum - 1];
             this.infoLog(`${destinationPoint.name} has selected as destination point...`);
             return [destinationPoint];
         }
 
         // handle all origin points
-        if (promptResultStr === "all") {
+        if (promptResultStr === UserInputNames.ALL) {
+            userInput.destinationPointSelect = UserInputNames.ALL;
             this.infoLog(`All points were selected as destination points...`);
             return points;
         }
@@ -170,13 +191,15 @@ export class CmdHandler {
             return;
         }
         this.infoLog(originPoints.length + " origin point/points have imported")
+        userInput.originFileName = inputFile;
+        userInput.originPointLen = originPoints.length;
 
         // get input file from user
         promptResultStr = await getPromptResult<string>({
             type: "text",
-            message: "Do you want to use same origin file for destinations? (Y/n): "
+            message: `Do you want to use same origin file for destinations? (${UserInputNames.YES}/${UserInputNames.NO}): `
         });
-        if (promptResultStr !== "Y") {
+        if (promptResultStr !== UserInputNames.YES) {
             inputFile = await getPromptResult<string>({
                 type: "text",
                 message: "Please enter input file name for destinations: "
@@ -203,6 +226,8 @@ export class CmdHandler {
             return;
         }
         this.infoLog(destionationPoints.length + " destination point/points have imported");
+        userInput.destinationFileName = inputFile;
+        userInput.destinationPointLen = destionationPoints.length;
 
         // get output file name from user
         outputFile = ''
@@ -212,10 +237,46 @@ export class CmdHandler {
                 message: "Please enter output file name: "
             });
         }
+        userInput.outputFileName = outputFile;
+
+
+        this.tableLog({
+            "Config Mode": configService.getConfigMode(),
+            "Config API Name": configService.getConfigApiName(),
+            "Config Direction": configService.getConfigDirection(),
+            "Origin Point File Name": userInput.originFileName,
+            "Origin Point Selection": userInput.originPointSelect,
+            "Origin Point Length": userInput.originPointLen,
+            "Destination Point File Name": userInput.destinationFileName,
+            "Destination Point Selection": userInput.destinationPointSelect,
+            "Destination Point Length": userInput.destinationPointLen,
+            "Output File Name": userInput.outputFileName
+
+        });
+
+        /*this.sessionLog("Config parameters => Mode: " + configService.getConfigMode() +
+            " | ApiName: " + configService.getConfigApiName() +
+            " | Direction: " + configService.getConfigDirection());
+        this.sessionLog("User inputs => Origin File Name: " + userInput.originFileName +
+            " | Origin Point: " + userInput.originPoint + " | Origin Point Length: " + userInput.originPointLen +
+            " | Destination File Name: " + userInput.destinationFileName +
+            " | Destionation Point: " + userInput.destinationPoint + " | Destionation Point Length: " + userInput.destinationPointLen +
+            " | Output File Name: " + userInput.outputFileName);*/
+
+
+        promptResultStr = '';
+        while (promptResultStr !== UserInputNames.YES && promptResultStr !== UserInputNames.NO) {
+            promptResultStr = await getPromptResult<string>({
+                type: "text",
+                message: `Do you confirm above configuration parameters and inputs? (${UserInputNames.YES}/${UserInputNames.NO}): `
+            });
+        }
 
         // calculate distance
-        await new DistanceService([new ConsoleLogService(), FileLogService.Instance],
-            [new ConsolePrintService(), new ExcelPrintService(outputFile)])
-            .calculate(originPoints, destionationPoints);
+        if (promptResultStr === UserInputNames.YES) {
+            await new DistanceService([new ConsoleLogService(), FileLogService.Instance],
+                [new ConsolePrintService(), new ExcelPrintService(outputFile)])
+                .calculate(userInput, originPoints, destionationPoints);
+        }
     }
 }
