@@ -1,24 +1,47 @@
-import { DistanceData } from "../models/data.model"
-import { getDate_YYYYMMDD, getDate_YYYYMMDD_HHMMSS } from "../utilities";
+import { getDate_YYYYMMDD, getDate_YYYYMMDD_HHMMSS, getMaxLenOfListElement } from "../utilities";
 import fs from 'fs';
+const colors = require('colors');
 
 export interface LogServiceInterface {
     errorLog(error: string): void;
-    warnLog(warning: string):void;
+    warnLog(warning: string): void;
     infoLog(info: string): void;
+    tableLog(data: any): void;
 }
 
 export class ConsoleLogService implements LogServiceInterface {
-    errorLog(error: string): void {
-        console.log("\x1b[31mERROR: " + error + "\x1b[0m");
+    consoleTable(data: any) {
+        if (typeof data === 'object') {
+            let newData: any = {};
+            let keyList: string[] = Object.keys(data);
+            let valueList: string[] = Object.values(data);
+
+            let keyMaxLen = getMaxLenOfListElement(keyList);
+            let valueMaxLen = getMaxLenOfListElement(valueList);
+
+            for (let i = 0; i < keyList.length; i++) {
+                newData[colors.cyan(keyList[i].toString().padEnd(keyMaxLen))] = valueList[i].toString().padEnd(valueMaxLen);
+            }
+            console.table(newData);
+        } else {
+            console.table(data);
+        }
     }
 
-    warnLog(warning: string):void  {
-        console.log("\x1b[35mWARN: " + warning + "\x1b[0m");
+    errorLog(error: string): void {
+        console.log(colors.red("ERROR: " + error));
+    }
+
+    warnLog(warning: string): void {
+        console.log(colors.yellow("WARNING:" + warning));
     }
 
     infoLog(info: string): void {
-        console.log("\x1b[33mINFO: " + info + "\x1b[0m");
+        console.log(colors.grey.bold("INFO: " + info));
+    }
+
+    tableLog(data: any) {
+        this.consoleTable(data);
     }
 }
 
@@ -48,6 +71,10 @@ export class FileLogService implements LogServiceInterface {
 
     infoLog(info: string): void {
         this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][INF] ${info}`);
+    }
+
+    tableLog(data: any) {
+        this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][TBL] ${JSON.stringify(data)}`);
     }
 
     async createFileSync() {
