@@ -1,26 +1,18 @@
 import { Point } from "../models/point.model";
-import { UserInputData, UserInputNames } from "../models/user-input.model";
 import { CmdInputFileTypes, ConfigService } from "../services/config.service";
 import { DistanceService } from "../services/distance.service";
 import { ExcelService } from "../services/excel.service";
 import { ConsoleLogService, FileLogService, LogServiceInterface } from "../services/log.service";
 import { PointService } from "../services/point.service";
 import { ConsolePrintService, ExcelPrintService, PrintServiceInterface } from "../services/print.service";
-import { exit, getMaxLenOfListElement, getPromptResult } from "../utilities";
+import { UserInputNames, UserInputService } from "../services/user-input.service";
+import { exit, getMaxLenOfListElement, getPromptResult, getUtcOffset, } from "../utilities";
 
 const configService = ConfigService.Instance;
 
 let promptResultStr: string;
 let promptResultNum: number;
-let userInput: UserInputData = {
-    originFileName: null,
-    originPointSelect: null,
-    originPointLen: 0,
-    destinationFileName: null,
-    destinationPointSelect: null,
-    destinationPointLen: 0,
-    outputFileName: null
-};
+let userInputService: UserInputService = new UserInputService([]);
 
 export class CmdHandler {
     _logServices: LogServiceInterface[] = [];
@@ -42,9 +34,9 @@ export class CmdHandler {
         }
     }
 
-    tableLog(session: any) {
+    tableLog(data: any) {
         for (const logService of this._logServices) {
-            logService.tableLog(session);
+            logService.tableLog(data);
         }
     }
 
@@ -109,16 +101,16 @@ export class CmdHandler {
                 });
             }
 
-            userInput.originPointSelect = UserInputNames.ONE;
+            userInputService.setOriginPointSelect(UserInputNames.ONE);
             let originPoint: Point = points[promptResultNum - 1];
-            this.infoLog(`${originPoint.name} has selected as origin point...`);
+            this.infoLog(`${originPoint.name} has selected as origin point`);
             return [originPoint];
         }
 
         // handle all origin points
         if (promptResultStr === UserInputNames.ALL) {
-            userInput.originPointSelect = UserInputNames.ALL;
-            this.infoLog(`All points were selected as origin points...`);
+            userInputService.setOriginPointSelect(UserInputNames.ALL);
+            this.infoLog(`All points were selected as origin points`);
             return points;
         }
 
@@ -146,16 +138,16 @@ export class CmdHandler {
                 });
             }
 
-            userInput.destinationPointSelect = UserInputNames.ONE;
+            userInputService.setDestinationPointSelect(UserInputNames.ONE);
             let destinationPoint: Point = points[promptResultNum - 1];
-            this.infoLog(`${destinationPoint.name} has selected as destination point...`);
+            this.infoLog(`${destinationPoint.name} has selected as destination point`);
             return [destinationPoint];
         }
 
         // handle all origin points
         if (promptResultStr === UserInputNames.ALL) {
-            userInput.destinationPointSelect = UserInputNames.ALL;
-            this.infoLog(`All points were selected as destination points...`);
+            userInputService.setDestinationPointSelect(UserInputNames.ALL);
+            this.infoLog(`All points were selected as destination points`);
             return points;
         }
 
@@ -170,7 +162,7 @@ export class CmdHandler {
         // get input file from user
         inputFile = await getPromptResult<string>({
             type: "text",
-            message: "Please enter input file name for origins: "
+            message: "Please enter input file name for origin points: "
         });
         // read origin input file
         points = await this.inputFileHandler(inputFile);
@@ -191,8 +183,8 @@ export class CmdHandler {
             return;
         }
         this.infoLog(originPoints.length + " origin point/points have imported")
-        userInput.originFileName = inputFile;
-        userInput.originPointLen = originPoints.length;
+        userInputService.setOriginFileName(inputFile);
+        userInputService.setOriginPointLen(originPoints.length);
 
         // get input file from user
         promptResultStr = await getPromptResult<string>({
@@ -226,43 +218,63 @@ export class CmdHandler {
             return;
         }
         this.infoLog(destionationPoints.length + " destination point/points have imported");
-        userInput.destinationFileName = inputFile;
-        userInput.destinationPointLen = destionationPoints.length;
+        userInputService.setDestinationFileName(inputFile);
+        userInputService.setDestinationPointLen(destionationPoints.length);
+
+        // get departure time
+        promptResultStr = await getPromptResult<string>({
+            type: "text",
+            message: `Do you want to enter departure time? (${UserInputNames.YES}/${UserInputNames.NO}): `
+        });
+        if (promptResultStr === UserInputNames.YES) {
+            let isOk = false;
+            let departureYMD: string;
+            let departureHM: string;
+            while (!isOk) {
+                departureYMD = await getPromptResult<string>({
+                    type: "text",
+                    message: `Enter current or a future date as DD-MM-YYYY:  `
+                });
+                isOk = userInputService.setDepartureTime_DD_MM_YYYY(departureYMD);
+            }
+
+            isOk = false;
+            while (!isOk) {
+                departureHM = await getPromptResult<string>({
+                    type: "text",
+                    message: `Enter current or a future time as HH:MM (between 00:00-23:59):  `
+                });
+                isOk = userInputService.setDepartureTime_HH_MM(departureHM);
+            }
+            userInputService.setDepartureEpochTimeAsSec();
+        }
 
         // get output file name from user
         outputFile = ''
         while (outputFile === '') {
             outputFile = await getPromptResult<string>({
                 type: "text",
-                message: "Please enter output file name: "
+                message: "Please enter output xlsx file name: "
             });
         }
-        userInput.outputFileName = outputFile;
+        userInputService.setOutputFileName(outputFile);
 
-
-        this.tableLog({
+        let tableLog = {
             "Config Mode": configService.getConfigMode(),
             "Config API Name": configService.getConfigApiName(),
             "Config Direction": configService.getConfigDirection(),
-            "Origin Point File Name": userInput.originFileName,
-            "Origin Point Selection": userInput.originPointSelect,
-            "Origin Point Length": userInput.originPointLen,
-            "Destination Point File Name": userInput.destinationFileName,
-            "Destination Point Selection": userInput.destinationPointSelect,
-            "Destination Point Length": userInput.destinationPointLen,
-            "Output File Name": userInput.outputFileName
+            "Origin Point File Name": userInputService.getOriginFileName(),
+            "Origin Point Selection": userInputService.getOriginPointSelect(),
+            "Origin Point Length": userInputService.getOriginPointLen(),
+            "Destination Point File Name": userInputService.getDestinationFileName(),
+            "Destination Point Selection": userInputService.getDestinationPointSelect(),
+            "Destination Point Length": userInputService.getDestinationPointLen(),
+            "Output File Name": userInputService.getOutputFileName() + ".xlsx"
+        }
+        if (userInputService.getDepartureTime_DD_MM_YYYY() !== null) tableLog["Departure Time DD-MM-YYYY"] = userInputService.getDepartureTime_DD_MM_YYYY();
+        if (userInputService.getDepartureTime_HH_MM() !== null) tableLog["Departure Time HH-MM"] = userInputService.getDepartureTime_HH_MM() + " " + getUtcOffset();
 
-        });
-
-        /*this.sessionLog("Config parameters => Mode: " + configService.getConfigMode() +
-            " | ApiName: " + configService.getConfigApiName() +
-            " | Direction: " + configService.getConfigDirection());
-        this.sessionLog("User inputs => Origin File Name: " + userInput.originFileName +
-            " | Origin Point: " + userInput.originPoint + " | Origin Point Length: " + userInput.originPointLen +
-            " | Destination File Name: " + userInput.destinationFileName +
-            " | Destionation Point: " + userInput.destinationPoint + " | Destionation Point Length: " + userInput.destinationPointLen +
-            " | Output File Name: " + userInput.outputFileName);*/
-
+        this.tableLog(tableLog);
 
         promptResultStr = '';
         while (promptResultStr !== UserInputNames.YES && promptResultStr !== UserInputNames.NO) {
@@ -276,7 +288,7 @@ export class CmdHandler {
         if (promptResultStr === UserInputNames.YES) {
             await new DistanceService([new ConsoleLogService(), FileLogService.Instance],
                 [new ConsolePrintService(), new ExcelPrintService(outputFile)])
-                .calculate(userInput, originPoints, destionationPoints);
+                .calculate(userInputService, originPoints, destionationPoints);
         }
     }
 }
