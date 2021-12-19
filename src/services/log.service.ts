@@ -1,4 +1,4 @@
-import { getDate_YYYYMMDD, getDate_YYYYMMDD_HHMMSS, getMaxLenOfListElement } from "../utilities";
+import { getCurrentDateAsStr, getMaxLenOfListElement } from "../utilities";
 import fs from 'fs';
 const colors = require('colors');
 
@@ -53,7 +53,7 @@ export class FileLogService implements LogServiceInterface {
 
     private constructor() {
         this._dir = "log/";
-        this._name = getDate_YYYYMMDD(Date.now()) + ".log";
+        this._name = getCurrentDateAsStr("YYYY-MM-DD") + ".log"
         this.createFileSync();
     }
 
@@ -62,19 +62,19 @@ export class FileLogService implements LogServiceInterface {
     }
 
     errorLog(error: string): void {
-        this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][ERR] ${error}`);
+        this.write(`[${getCurrentDateAsStr("HH:MM:SS")}][ERR] ${error}`);
     }
 
     warnLog(warning: string): void {
-        this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][WRN] ${warning}`);
+        this.write(`[${getCurrentDateAsStr("HH:MM:SS")}][WRN] ${warning}`);
     }
 
     infoLog(info: string): void {
-        this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][INF] ${info}`);
+        this.write(`[${getCurrentDateAsStr("HH:MM:SS")}][INF] ${info}`);
     }
 
     tableLog(data: any) {
-        this.write(`[${getDate_YYYYMMDD_HHMMSS(Date.now())}][TBL] ${JSON.stringify(data)}`);
+        this.write(`[${getCurrentDateAsStr("HH:MM:SS")}][TBL] ${JSON.stringify(data)}`);
     }
 
     async createFileSync() {
