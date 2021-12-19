@@ -26,6 +26,7 @@
     "colors": "^1.4.0",
     "exceljs": "^4.3.0",
     "google-distance-matrix": "^1.1.1",
+    "moment": "^2.29.1",
     "prompts": "^2.4.2",
     "read-excel-file": "^5.2.25"
   }
