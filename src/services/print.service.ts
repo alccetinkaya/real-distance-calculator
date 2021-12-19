@@ -8,7 +8,11 @@ export interface PrintServiceInterface {
 
 export class ConsolePrintService implements PrintServiceInterface {
     printDistanceData(data: PrintData): void {
-        console.log(`${data.originPoint.name.padEnd(25)} -> ${data.destinationPoint.name.padEnd(25)} || Distance: ${data.distance.value.padEnd(10)} ${data.distance.measure} Duration: ${data.duration.value.padEnd(10)} ${data.duration.measure}`);
+        let originPointName: string = data.originPoint.name.padEnd(25);
+        let destinationPointName: string = data.destinationPoint.name.padEnd(25);
+        let distance: string = (data.distance.value + " " + data.distance.measure).padEnd(10);
+        let duration: string = (data.duration.value + " " + data.duration.measure);
+        console.log(originPointName + " -> " + destinationPointName + " || " + "Distance: " + distance + " Duration: " + duration);
     }
 }
 
