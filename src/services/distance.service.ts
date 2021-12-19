@@ -1,9 +1,10 @@
 import { PrintData } from "../models/data.model";
 import { Point } from "../models/point.model";
-import { UserInputData, UserInputNames } from "../models/user-input.model";
+import { getCurrentEpochTimeAsSec, getDateAsStr } from "../utilities";
 import { ConfigApiNames, ConfigDirectionNames, ConfigService } from "./config.service";
 import { LogServiceInterface } from "./log.service";
 import { PrintServiceInterface } from "./print.service";
+import { UserInputNames, UserInputService } from "./user-input.service";
 
 const googleDistance = require('google-distance-matrix');
 const configService: ConfigService = ConfigService.Instance;
@@ -121,23 +122,35 @@ export class DistanceService {
         }
     }
 
-    async googleDistanceAPI(userInput: UserInputData, origins: Point[], destinations: Point[]) {
+    async googleDistanceAPI(userInputService: UserInputService, origins: Point[], destinations: Point[]) {
         await this.calculateDistanceGoogle(origins, destinations);
-        if (configService.getConfigDirection() == ConfigDirectionNames.TWO_WAY &&
-            userInput.originPointSelect === UserInputNames.ALL && userInput.destinationPointSelect === UserInputNames.ALL) {
+        if ((configService.getConfigDirection() === ConfigDirectionNames.TWO_WAY) &&
+            (userInputService.getOriginPointSelect() === UserInputNames.ALL && userInputService.getDestinationPointSelect() === UserInputNames.ONE) ||
+            (userInputService.getOriginPointSelect() === UserInputNames.ONE && userInputService.getDestinationPointSelect() === UserInputNames.ALL)) {
             await this.calculateDistanceGoogle(destinations, origins);
         }
     }
 
-    async calculate(userInput: UserInputData, origins: Point[], destinations: Point[]) {
+    async calculate(userInputService: UserInputService, origins: Point[], destinations: Point[]) {
         switch (configService.getConfigApiName()) {
             case ConfigApiNames.TEST:
                 this.testDistanceAPI(origins, destinations);
                 break;
+
             case ConfigApiNames.GOOGLE:
                 googleDistance.key(configService.getConfigApiKey());
-                await this.googleDistanceAPI(userInput, origins, destinations);
+                let departureEpochTime: number = userInputService.getDepartureEpochTimeAsSec();
+                if (departureEpochTime !== 0) {
+                    let currEpochTime: number = getCurrentEpochTimeAsSec();
+                    if (currEpochTime > departureEpochTime) {
+                        this.errorLog(`Departure time behind current time. Departure Time: ${getDateAsStr(departureEpochTime * 1000, "DD-MM-YYYY hh:mm:ss")} | Current Time: ${getDateAsStr(currEpochTime * 1000, "DD-MM-YYYY hh:mm:ss")}`);
+                        return;
+                    }
+                    googleDistance.departure_time(departureEpochTime);
+                }
+                await this.googleDistanceAPI(userInputService, origins, destinations);
                 break;
+
             default:
                 break;
         }
