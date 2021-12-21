@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { PrintData } from "../models/data.model";
-const Excel = require('exceljs')
+import { ExcelService } from './excel.service';
 
 export interface PrintServiceInterface {
     printDistanceData(data: PrintData): void
@@ -19,36 +19,34 @@ export class ConsolePrintService implements PrintServiceInterface {
 export class ExcelPrintService implements PrintServiceInterface {
     _dir: string;
     _name: string;
-    _workbook: any;
-    _worksheet: any
+    _sheetName: string;
+    _excelService: ExcelService;
 
-    constructor(name: string) {
+    constructor(name: string, excelService: ExcelService) {
         this._dir = "output/"
         this._name = name + ".xlsx";
-        this._workbook = new Excel.Workbook();
-        this._worksheet = this._workbook.addWorksheet('Sheet1');
+        this._sheetName = "Sheet1";
+        this._excelService = excelService;
 
-        this._worksheet.columns = [
-            { header: 'Origin Code', key: 'originCode' },
-            { header: 'Origin Name', key: 'originName' },
-            { header: 'Destination Code', key: 'destinationCode' },
-            { header: 'Destination Name', key: 'destinationName' },
-            { header: 'Distance', key: 'distance' },
-            { header: 'Distance Measure', key: 'distanceMeasure' },
-            { header: 'Duration', key: 'duration' },
-            { header: 'Duration Measure', key: 'durationMeasure' },
+        this._excelService.addWorksheet(this._sheetName);
+        this._excelService.getWorksheet(this._sheetName).columns = [
+            { header: 'Origin Code', key: 'originCode', width: 20 },
+            { header: 'Origin Name', key: 'originName', width: 20 },
+            { header: 'Destination Code', key: 'destinationCode', width: 20 },
+            { header: 'Destination Name', key: 'destinationName', width: 20 },
+            { header: 'Distance', key: 'distance', width: 20 },
+            { header: 'Distance Measure', key: 'distanceMeasure', width: 20 },
+            { header: 'Duration', key: 'duration', width: 20 },
+            { header: 'Duration Measure', key: 'durationMeasure', width: 20 },
         ];
-        this._worksheet.columns.forEach(column => {
-            column.width = column.header.length < 12 ? 12 : column.header.length
-        })
-        this._worksheet.getRow(1).font = { bold: true }
+        this._excelService.getRow(this._sheetName, 1).font = { bold: true }
 
         fs.mkdirSync(this._dir, { recursive: true });
-        this._workbook.xlsx.writeFile(this._dir + this._name);
+        this._excelService.writeFile(this._dir + this._name);
     }
 
-    printDistanceData(data: PrintData): void {
-        this._worksheet.addRow({
+    async printDistanceData(data: PrintData) {
+        this._excelService.addRow(this._sheetName, {
             originCode: data.originPoint.code,
             originName: data.originPoint.name,
             destinationCode: data.destinationPoint.code,
@@ -58,6 +56,6 @@ export class ExcelPrintService implements PrintServiceInterface {
             duration: Number(data.duration.value),
             durationMeasure: data.duration.measure
         });
-        this._workbook.xlsx.writeFile(this._dir + this._name);
+        await this._excelService.writeFile(this._dir + this._name);
     }
 }
