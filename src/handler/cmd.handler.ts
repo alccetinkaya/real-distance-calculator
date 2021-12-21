@@ -47,9 +47,20 @@ export class CmdHandler {
     }
 
     async inputExcelFileHandler(excelFile: any): Promise<Point[]> {
+        // get sheet name from user
+        let sheetName: string = await getPromptResult<string>({
+            type: "text",
+            message: `Please enter sheet name (default: Sheet1): `
+        });
+        if (sheetName === '')  sheetName = "Sheet1";
+
         let points: any[];
         try {
-            points = await new ExcelService().readPointsFromExcelFileSync(excelFile);
+            // check excel file extension
+            let strList: string[] = excelFile.split(".");
+            if (strList[strList.length - 1] !== "xlsx") excelFile += ".xlsx";
+
+            points = await new ExcelService().readFile(excelFile, sheetName, true);
         } catch (error) {
             this.errorLog(`Read excel file => ${error}`);
             return null;
@@ -287,7 +298,7 @@ export class CmdHandler {
         // calculate distance
         if (promptResultStr === UserInputNames.YES) {
             await new DistanceService([new ConsoleLogService(), FileLogService.Instance],
-                [new ConsolePrintService(), new ExcelPrintService(outputFile)])
+                [new ConsolePrintService(), new ExcelPrintService(outputFile, new ExcelService())])
                 .calculate(userInputService, originPoints, destionationPoints);
         }
     }
